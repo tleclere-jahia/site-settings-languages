@@ -1,0 +1,21 @@
+# Eclipse
+/.classpath
+/.project
+/.settings
+
+# Intellij
+.idea
+*.iml
+*.ipr
+
+# Maven
+target
+
+# Jahia DX Studio
+repository.xml.generated
+
+# Javascript
+.yarn
+node_modules
+.__mf__temp
+src/main/resources/javascript/apps
