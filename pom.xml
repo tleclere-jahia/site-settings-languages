@@ -66,6 +66,10 @@
         <developerConnection>scm:dummy:uri</developerConnection>
     </scm>
 
+    <properties>
+        <jahia-module-type>system</jahia-module-type>
+    </properties>
+
     <repositories>
         <repository>
             <id>jahia-public</id>

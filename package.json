@@ -1,0 +1,33 @@
+{
+  "name": "site-settings-languages",
+  "version": "1.0.0-SNAPSHOT",
+  "packageManager": "yarn@4.12.0",
+  "type": "module",
+  "jahia": {
+    "remotes": {
+      "jahia": "javascript/apps/remoteEntry.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@jahia/vite-federation-plugin": "^0.1.1",
+    "@types/prop-types": "^15",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/react-table": "^7",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
+  "dependencies": {
+    "@jahia/moonstone": "^2.17.5",
+    "@jahia/ui-extender": "^1.2.0",
+    "i18next": "^25.8.20",
+    "prop-types": "^15.8.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^11.18.6",
+    "react-table": "^7.8.0"
+  }
+}
