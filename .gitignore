@@ -20,3 +20,6 @@ repository.xml.generated
 node
 node_modules
 src/main/resources/javascript/apps
+
+# Cypress
+cypress/screenshots

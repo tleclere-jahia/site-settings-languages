@@ -9,14 +9,22 @@
     }
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build",
+    "e2e:ci": "cypress run --browser chrome",
+    "e2e:debug": "cypress open"
   },
   "devDependencies": {
+    "@jahia/cypress": "^8.0.0",
     "@jahia/vite-federation-plugin": "^0.1.1",
     "@module-federation/vite": "https://pkg.pr.new/@module-federation/vite@523",
+    "@types/cypress": "^1.1.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/react-table": "^7.7.20",
+    "cross-fetch": "^4.1.0",
+    "cypress": "^15.13.0",
+    "cypress-iframe": "^1.0.1",
+    "cypress-wait-until": "^3.0.2",
     "sass-embedded": "^1.98.0",
     "typescript": "^6.0.2",
     "vite": "^7.3.1"
