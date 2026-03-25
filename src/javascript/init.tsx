@@ -1,5 +1,6 @@
 import {registry} from "@jahia/ui-extender";
 import i18n from "i18next";
+import {Language} from "@jahia/moonstone";
 import {LanguageSettings} from "./LanguageSettings/LanguageSettings";
 
 export default () => {
@@ -11,6 +12,7 @@ export default () => {
             registry.add('adminRoute', 'site-settings-languages', {
                 targets: ['administration-sites:41'],
                 label: 'site-settings-languages:label.settings.title',
+                icon: <Language/>,
                 isSelectable: true,
                 requiredPermission: 'siteAdminLanguages',
                 render: () => <LanguageSettings/>

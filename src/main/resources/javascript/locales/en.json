@@ -1,7 +1,29 @@
 {
   "label": {
     "settings": {
-      "title": "Site Settings Languages setting"
+      "title": "Languages",
+      "replace": "Replace untranslated content with the default language content",
+      "unlisted": "Allow to use unlisted languages",
+      "save": "Save"
+    },
+    "placeholder": "Select a language",
+    "table": {
+      "th": {
+        "language": "Language",
+        "default": "Default",
+        "mandatory": "Mandatory",
+        "activeInEdit": "Active (edit)",
+        "activeInLive": "Active (live)",
+        "actions": "Actions"
+      },
+      "default": "Set as default language",
+      "delete": "Delete",
+      "errors": {
+        "current": "This language cannot be removed because it's the current displayed language",
+        "default": "This language cannot be removed because it's the default language",
+        "active": "This language cannot be removed because it's active in edition",
+        "contents": "This language cannot be removed as contents still exist for this language"
+      }
     }
   }
 }

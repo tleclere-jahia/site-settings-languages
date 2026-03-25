@@ -16,6 +16,7 @@ repository.xml.generated
 
 # Javascript
 .yarn
-node_modules
 .__mf__temp
+node
+node_modules
 src/main/resources/javascript/apps
