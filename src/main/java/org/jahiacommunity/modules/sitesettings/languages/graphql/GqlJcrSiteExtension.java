@@ -8,7 +8,6 @@ import graphql.annotations.annotationTypes.GraphQLTypeExtension;
 import org.jahia.modules.graphql.provider.dxm.site.GqlJcrSite;
 import org.jahia.services.content.JCRContentUtils;
 import org.jahia.services.content.decorator.JCRSiteNode;
-import org.jahia.utils.LanguageCodeConverters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +15,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.query.Query;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
-import java.util.Locale;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -35,9 +32,10 @@ public class GqlJcrSiteExtension {
     @GraphQLField
     @GraphQLDescription("Count languages usage")
     public Set<GqlLocale> getSiteLocales(@GraphQLName("language") @GraphQLNonNull String language) {
-        JCRSiteNode site = (JCRSiteNode) gqlJcrSite.getNode();
-        return Stream.concat(site.getLanguagesAsLocales().stream(), site.getInactiveLanguagesAsLocales().stream())
-                .map(locale -> new GqlLocale(locale, countLanguages(locale.toString())))
+        JCRSiteNode siteNode = (JCRSiteNode) gqlJcrSite.getNode();
+        return Stream.concat(
+                        siteNode.getLanguagesAsLocales().stream().map(locale -> new GqlLocale(locale, true, siteNode.getActiveLiveLanguages().contains(locale.toString()), siteNode.getMandatoryLanguages().contains(locale.toString()), countLanguages(locale.toString()))),
+                        siteNode.getInactiveLanguagesAsLocales().stream().map(locale -> new GqlLocale(locale, false, false, siteNode.getMandatoryLanguages().contains(locale.toString()), countLanguages(locale.toString()))))
                 .sorted(Comparator.comparing(l -> l.getDisplayName(language)))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }

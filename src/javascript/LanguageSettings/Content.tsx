@@ -1,4 +1,3 @@
-import {useState} from "react";
 import {useTranslation} from "react-i18next";
 import {useNodeChecks} from "@jahia/data-helper";
 import {
@@ -17,32 +16,33 @@ import {
     TableBodyCell,
     TableHead,
     TableHeadCell,
-    TableRow, Typography,
-    Warning
+    TableRow
 } from "@jahia/moonstone";
 import "./Content.scss";
 
-export const Content = ({site, uilang, languages, setLanguages}) => {
+export const Content = ({
+                            uilang, site,
+                            siteLocales, setSiteLocales,
+                            defaultLanguage, setDefaultLanguage,
+                            mixLanguage, setMixLanguage,
+                            allowsUnlistedLanguages, setAllowsUnlistedLanguages
+                        }) => {
     const {t} = useTranslation('site-settings-languages');
     const res = useNodeChecks({path: `/sites/${site.name}`, uilang}, {requiredPermission: 'siteAdminLanguages'});
-
-    const [defaultLanguage, setDefaultLanguage] = useState(site.defaultLanguage);
-    const [allowsUnlistedLanguages, setAllowsUnlistedLanguages] = useState(site.allowsUnlistedLanguages.booleanValue);
-    const [mixLanguage, setMixLanguage] = useState(site.mixLanguage.booleanValue);
 
     const getLanguageCount = l => site.siteLocales.find(lang => lang.language === l.language)?.count || 0;
 
     const setMandatory = l => {
-        languages.find(lang => lang.language === l.language).mandatory = !l.mandatory;
-        setLanguages([...languages]);
+        siteLocales.find(lang => lang.language === l.language).mandatory = !l.mandatory;
+        setSiteLocales([...siteLocales]);
     };
     const setActiveInEdit = l => {
-        languages.find(lang => lang.language === l.language).activeInEdit = !l.activeInEdit;
-        setLanguages([...languages]);
+        siteLocales.find(lang => lang.language === l.language).activeInEdit = !l.activeInEdit;
+        setSiteLocales([...siteLocales]);
     };
     const setActiveInLive = l => {
-        languages.find(lang => lang.language === l.language).activeInLive = !l.activeInLive;
-        setLanguages([...languages]);
+        siteLocales.find(lang => lang.language === l.language).activeInLive = !l.activeInLive;
+        setSiteLocales([...siteLocales]);
     };
 
     const hasError = l => {
@@ -68,7 +68,7 @@ export const Content = ({site, uilang, languages, setLanguages}) => {
                 </TableRow>
             </TableHead>
             <TableBody>
-                {res.checksResult && languages
+                {res.checksResult && siteLocales
                     .sort((a, b) => a.displayName.localeCompare(b.displayName))
                     .map(l => <TableRow>
                         <TableBodyCell>{l.displayName} <Pill label={l.language}/></TableBodyCell>
@@ -77,16 +77,16 @@ export const Content = ({site, uilang, languages, setLanguages}) => {
                             <RadioUnchecked/>
                         }</TableBodyCell>
                         <TableBodyCell><Checkbox checked={l.mandatory} onClick={() => setMandatory(l)}/></TableBodyCell>
-                        <TableBodyCell><Checkbox checked={l.activeInEdit} onClick={() => setActiveInEdit(l)}
-                                                 isDisabled={l.language === defaultLanguage || l.language === uilang}/></TableBodyCell>
-                        <TableBodyCell><Checkbox checked={l.activeInLive} onClick={() => setActiveInLive(l)}
-                                                 isDisabled={l.language === defaultLanguage || !l.activeInEdit}/></TableBodyCell>
+                        <TableBodyCell><Checkbox checked={l.activeInEdit}
+                                                 onClick={() => setActiveInEdit(l)}/></TableBodyCell>
+                        <TableBodyCell><Checkbox checked={l.activeInLive}
+                                                 onClick={() => setActiveInLive(l)}/></TableBodyCell>
                         <TableBodyCell>
                             <Button title={t('label.table.default')} variant="ghost" icon={<Check/>}
                                     onClick={() => setDefaultLanguage(l.language)}/>
                             <Button title={hasError(l)} variant="ghost" color="danger" icon={<Delete/>}
                                     disabled={l.mandatory || l.activeInEdit || l.language === defaultLanguage || l.language === uilang || getLanguageCount(l) > 0}
-                                    onClick={() => setLanguages(languages.filter(language => language.language !== l.language))}/>
+                                    onClick={() => setSiteLocales(siteLocales.filter(language => language.language !== l.language))}/>
                         </TableBodyCell>
                     </TableRow>)}
             </TableBody>
