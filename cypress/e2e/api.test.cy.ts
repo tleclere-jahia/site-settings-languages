@@ -1,13 +1,15 @@
 import gql from "graphql-tag";
 
 describe('GraphQL API calls', () => {
-
     before(() => {
         cy.login();
         // check if site-settings-languages module is deployed
         cy.visit('/cms/adminframe/default/en/settings.manageModules.html?redirect=false');
         cy.get('input[type="search"]').type('site-settings-languages');
         cy.get('table tbody tr[data-sel-role="module-row-site-settings-languages"]').should('exist');
+    });
+    after(() => {
+        cy.logout();
     });
 
     // get systemsite default locales
@@ -28,9 +30,5 @@ describe('GraphQL API calls', () => {
         }).should(result => {
             expect(result?.data?.admin?.availableLocales).length(727);
         });
-    });
-
-    after(() => {
-        cy.logout();
     });
 });

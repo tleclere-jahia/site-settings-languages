@@ -123,7 +123,7 @@ export const LanguageSettings = () => {
                           aria-labelledby="site-settings-languages-title"
                           header={<Header mainActions={[
                               <Dropdown data={availableLocales} onChange={onLanguageChange} isLoading={loading}
-                                        placeholder={t('label.placeholder')}/>,
+                                        className={"site-settings-languages-dropdown"} placeholder={t('label.placeholder')}/>,
                               <Button color="accent" size="big" onClick={save}
                                       data-sel-role="save-site-settings-languages"
                                       label={t('label.settings.save')}/>
