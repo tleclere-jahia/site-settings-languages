@@ -1,0 +1,13 @@
+.field {
+  .dropdown {
+    margin-top: var(--spacing-small);
+  }
+
+  &:not(:first-child) {
+    margin-top: var(--spacing-medium);
+  }
+}
+
+.btn-add, .radio-section {
+  margin-top: var(--spacing-medium);
+}

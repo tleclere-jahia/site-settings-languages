@@ -2,27 +2,62 @@
   "label": {
     "settings": {
       "title": "Languages",
+      "header": "Manage languages for \"{{ siteName }}\"",
       "replace": "Replace untranslated content with the default language content",
       "unlisted": "Allow to use unlisted languages",
-      "save": "Save"
+      "save": "Save",
+      "unstranslatedContent": {
+        "title": "Display the default language when the content is untranslated",
+        "never": "Never",
+        "only": "Only for languages supported by the website",
+        "all": "All languages, even those not supported by the website"
+      }
     },
-    "placeholder": "Select a language",
+    "modal": {
+      "header": "Add language",
+      "language": {
+        "title": "Language",
+        "placeholder": "Select a language"
+      },
+      "visibility": {
+        "title": "Visibility",
+        "placeholder": "Active, Hidden in live, Required, Inactive"
+      },
+      "actions": {
+        "add": "Add",
+        "save": "Save",
+        "cancel": "Cancel"
+      }
+    },
+    "visibility": {
+      "active": {
+        "title": "Active",
+        "description": "Content is editable and visible in live"
+      },
+      "hiddenInLive": {
+        "title": "Hidden in live",
+        "description": "Content is editable but not visible in live"
+      },
+      "required": {
+        "title": "Required",
+        "description": "Mandatory language to publish any other languages"
+      },
+      "inactive": {
+        "title": "Inactive",
+        "description": "Content is not editable and not visible in live"
+      }
+    },
     "table": {
       "th": {
-        "language": "Language",
         "default": "Default",
-        "mandatory": "Mandatory",
-        "activeInEdit": "Active (edit)",
-        "activeInLive": "Active (live)",
-        "actions": "Actions"
+        "languages": "Languages",
+        "visibility": "Visibility"
       },
-      "default": "Set as default language",
-      "delete": "Delete",
-      "errors": {
-        "current": "This language cannot be removed because it's the current displayed language",
-        "default": "This language cannot be removed because it's the default language",
-        "active": "This language cannot be removed because it's active in edition",
-        "contents": "This language cannot be removed as contents still exist for this language"
+      "actions": {
+        "edit": "Edit",
+        "default": "Set as default language",
+        "delete": "Delete",
+        "add": "Add language"
       }
     }
   }

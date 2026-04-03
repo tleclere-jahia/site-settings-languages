@@ -1,16 +1,14 @@
+import {useState} from "react";
 import {useTranslation} from "react-i18next";
-import {useNodeChecks} from "@jahia/data-helper";
 import {
+    Add,
     Button,
     Check,
-    Checkbox,
-    CheckboxGroup,
-    CheckboxItem,
-    Delete,
+    Menu,
+    MenuItem,
+    MoreVert,
     Paper,
     Pill,
-    RadioChecked,
-    RadioUnchecked,
     Table,
     TableBody,
     TableBodyCell,
@@ -18,86 +16,101 @@ import {
     TableHeadCell,
     TableRow
 } from "@jahia/moonstone";
-import "./Content.scss";
+import LanguageModal from "./LanguageModal";
+import "./LanguageSettings.scss";
 
-export const Content = ({
-                            uilang, site,
-                            siteLocales, setSiteLocales,
-                            defaultLanguage, setDefaultLanguage,
-                            mixLanguage, setMixLanguage,
-                            allowsUnlistedLanguages, setAllowsUnlistedLanguages
-                        }) => {
+export default ({uilang, defaultLanguage, setDefaultLanguage, siteLocales, setSiteLocales, availableLocales}) => {
     const {t} = useTranslation('site-settings-languages');
-    const res = useNodeChecks({path: `/sites/${site.name}`, uilang}, {requiredPermission: 'siteAdminLanguages'});
 
-    const getLanguageCount = l => site.siteLocales.find(lang => lang.language === l.language)?.count || 0;
-
-    const setMandatory = l => {
-        siteLocales.find(lang => lang.language === l.language).mandatory = !l.mandatory;
-        setSiteLocales([...siteLocales]);
+    const [language, setLanguage] = useState(null);
+    const [languageModalOpen, setLanguageModalOpen] = useState(false);
+    const [menuOpen, setMenuOpen] = useState({});
+    const [anchorEl, setAnchorEl] = useState({});
+    const closeMenu = language => {
+        setMenuOpen(Object.assign({}, menuOpen, {[language]: false}));
+        setAnchorEl(Object.assign({}, anchorEl, {[language]: null}));
     };
-    const setActiveInEdit = l => {
-        siteLocales.find(lang => lang.language === l.language).activeInEdit = !l.activeInEdit;
-        setSiteLocales([...siteLocales]);
-    };
-    const setActiveInLive = l => {
-        siteLocales.find(lang => lang.language === l.language).activeInLive = !l.activeInLive;
-        setSiteLocales([...siteLocales]);
+    const openMenu = (e, language) => {
+        setMenuOpen(Object.assign({}, menuOpen, {[language]: !menuOpen[language]}));
+        setAnchorEl(Object.assign({}, anchorEl, {[language]: e.currentTarget}));
     };
 
-    const hasError = l => {
-        if (l.language === defaultLanguage || l.language === uilang || !l.activeInEdit || l.mandatory || getLanguageCount(l) > 0) {
-            if (l.language == uilang) return t('label.table.errors.current');
-            if (l.language == defaultLanguage) return t('label.table.errors.default');
-            if (l.activeInEdit) return t('label.table.errors.active');
-            if (getLanguageCount(l) > 0) return t('label.table.errors.contents');
-        }
-        return t('label.table.delete');
+    const openModal = language => {
+        if (language) closeMenu(language.language);
+        setLanguage(language);
+        setLanguageModalOpen(true);
+    };
+    const closeModal = (l, addLanguage) => {
+        setLanguageModalOpen(false);
+        if (addLanguage) setSiteLocales([...siteLocales, l]);
+        else setSiteLocales(siteLocales.map(lang => lang.language === l.language ? l : lang));
     };
 
-    return <Paper>
-        <Table>
-            <TableHead>
-                <TableRow>
-                    <TableHeadCell>{t('label.table.th.language')}</TableHeadCell>
-                    <TableHeadCell>{t('label.table.th.default')}</TableHeadCell>
-                    <TableHeadCell>{t('label.table.th.mandatory')}</TableHeadCell>
-                    <TableHeadCell>{t('label.table.th.activeInEdit')}</TableHeadCell>
-                    <TableHeadCell>{t('label.table.th.activeInLive')}</TableHeadCell>
-                    <TableHeadCell>{t('label.table.th.actions')}</TableHeadCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {res.checksResult && siteLocales
-                    .sort((a, b) => a.displayName.localeCompare(b.displayName))
-                    .map(l => <TableRow>
-                        <TableBodyCell>{l.displayName} <Pill label={l.language}/></TableBodyCell>
-                        <TableBodyCell>{defaultLanguage === l.language ?
-                            <RadioChecked/> :
-                            <RadioUnchecked/>
-                        }</TableBodyCell>
-                        <TableBodyCell><Checkbox checked={l.mandatory} onClick={() => setMandatory(l)}/></TableBodyCell>
-                        <TableBodyCell><Checkbox checked={l.activeInEdit}
-                                                 onClick={() => setActiveInEdit(l)}/></TableBodyCell>
-                        <TableBodyCell><Checkbox checked={l.activeInLive}
-                                                 onClick={() => setActiveInLive(l)}/></TableBodyCell>
-                        <TableBodyCell>
-                            <Button title={t('label.table.default')} variant="ghost" icon={<Check/>}
-                                    onClick={() => setDefaultLanguage(l.language)}/>
-                            <Button title={hasError(l)} variant="ghost" color="danger" icon={<Delete/>}
-                                    disabled={l.mandatory || l.activeInEdit || l.language === defaultLanguage || l.language === uilang || getLanguageCount(l) > 0}
-                                    onClick={() => setSiteLocales(siteLocales.filter(language => language.language !== l.language))}/>
-                        </TableBodyCell>
-                    </TableRow>)}
-            </TableBody>
-        </Table>
+    const getLanguageCount = l => siteLocales.find(lang => lang.language === l.language)?.count || 0;
 
-        <CheckboxGroup name="default" className="checkboxes">
-            <CheckboxItem id="replace" value="replace" label={t('label.settings.replace')}
-                          checked={mixLanguage} onChange={() => setMixLanguage(!mixLanguage)}/>
-            <CheckboxItem id="unlisted" value="unlisted" label={t('label.settings.unlisted')}
-                          checked={allowsUnlistedLanguages}
-                          onChange={() => setAllowsUnlistedLanguages(!allowsUnlistedLanguages)}/>
-        </CheckboxGroup>
-    </Paper>;
+    return <>
+        <LanguageModal language={language}
+                       isOpen={languageModalOpen} closeModal={closeModal}
+                       siteLocales={siteLocales} availableLocales={availableLocales}/>
+        <Paper>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableHeadCell>{t('label.table.th.default')}</TableHeadCell>
+                        <TableHeadCell>{t('label.table.th.languages')}</TableHeadCell>
+                        <TableHeadCell>{t('label.table.th.visibility')}</TableHeadCell>
+                        <TableHeadCell/>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {siteLocales
+                        .sort((a, b) => a.displayName.localeCompare(b.displayName))
+                        .map(l => <TableRow onClick={e => e.stopPropagation()} key={l.language}>
+                            <TableBodyCell>{defaultLanguage === l.language ? <Check color="blue"/> : ''}</TableBodyCell>
+                            <TableBodyCell>{l.displayName} <Pill label={l.language}/></TableBodyCell>
+                            <TableBodyCell>{
+                                l.activeInEdit && l.activeInLive ? t('label.visibility.active.title') :
+                                    l.activeInEdit && !l.activeInLive ? t('label.visibility.hiddenInLive.title') :
+                                        l.mandatory ? t('label.visibility.required.title') : t('label.visibility.inactive.title')
+                            }</TableBodyCell>
+                            <TableBodyCell>
+                                <Button size="big" variant="ghost" icon={<MoreVert/>}
+                                        onClick={e => openMenu(e, l.language)}/>
+                                <Menu isDisplayed={menuOpen[l.language] !== undefined && menuOpen[l.language]}
+                                      anchorEl={anchorEl[l.language]}
+                                      anchorPosition={{top: 0, left: 0}}
+                                      anchorElOrigin={{
+                                          vertical: 'bottom',
+                                          horizontal: 'left'
+                                      }}
+                                      transformElOrigin={{
+                                          vertical: 'top',
+                                          horizontal: 'left'
+                                      }}
+                                      onClose={() => closeMenu(l.language)}>
+                                    <MenuItem label={t('label.table.actions.edit')}
+                                              isDisabled={l.language === defaultLanguage}
+                                              onClick={() => openModal(l)}/>
+                                    <MenuItem label={t('label.table.actions.default')}
+                                              isDisabled={l.language === defaultLanguage}
+                                              onClick={() => {
+                                                  setDefaultLanguage(l.language);
+                                                  setMenuOpen(false);
+                                              }}/>
+                                    <MenuItem label={t('label.table.actions.delete')}
+                                              isDisabled={l.mandatory || l.activeInEdit || l.language === defaultLanguage || l.language === uilang || getLanguageCount(l) > 0}
+                                              onClick={() => {
+                                                  setSiteLocales(siteLocales.filter(language => language.language !== l.language));
+                                                  setMenuOpen(false);
+                                              }}/>
+                                </Menu>
+                            </TableBodyCell>
+                        </TableRow>)}
+                </TableBody>
+            </Table>
+
+            <Button size="big" variant="outlined" color="accent" label={t('label.table.actions.add')} icon={<Add/>}
+                    onClick={() => openModal(null)} className="btn-add"/>
+        </Paper>
+    </>;
 };
