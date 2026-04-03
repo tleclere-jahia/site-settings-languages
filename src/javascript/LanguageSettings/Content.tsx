@@ -48,6 +48,12 @@ export default ({uilang, defaultLanguage, setDefaultLanguage, siteLocales, setSi
 
     const getLanguageCount = l => siteLocales.find(lang => lang.language === l.language)?.count || 0;
 
+    const columnsWidth = {
+        default: '5%',
+        languages: '35%',
+        visibility: '45%'
+    };
+
     return <>
         <LanguageModal language={language}
                        isOpen={languageModalOpen} closeModal={closeModal}
@@ -56,9 +62,9 @@ export default ({uilang, defaultLanguage, setDefaultLanguage, siteLocales, setSi
             <Table>
                 <TableHead>
                     <TableRow>
-                        <TableHeadCell>{t('label.table.th.default')}</TableHeadCell>
-                        <TableHeadCell>{t('label.table.th.languages')}</TableHeadCell>
-                        <TableHeadCell>{t('label.table.th.visibility')}</TableHeadCell>
+                        <TableHeadCell width={columnsWidth.default}>{t('label.table.th.default')}</TableHeadCell>
+                        <TableHeadCell width={columnsWidth.languages}>{t('label.table.th.languages')}</TableHeadCell>
+                        <TableHeadCell width={columnsWidth.visibility}>{t('label.table.th.visibility')}</TableHeadCell>
                         <TableHeadCell/>
                     </TableRow>
                 </TableHead>
@@ -66,14 +72,16 @@ export default ({uilang, defaultLanguage, setDefaultLanguage, siteLocales, setSi
                     {siteLocales
                         .sort((a, b) => a.displayName.localeCompare(b.displayName))
                         .map(l => <TableRow onClick={e => e.stopPropagation()} key={l.language}>
-                            <TableBodyCell>{defaultLanguage === l.language ? <Check color="blue"/> : ''}</TableBodyCell>
-                            <TableBodyCell>{l.displayName} <Pill label={l.language}/></TableBodyCell>
-                            <TableBodyCell>{
+                            <TableBodyCell width={columnsWidth.default}>{defaultLanguage === l.language ?
+                                <Check color="blue"/> : ''}</TableBodyCell>
+                            <TableBodyCell width={columnsWidth.languages}>{l.displayName} <Pill
+                                label={l.language}/></TableBodyCell>
+                            <TableBodyCell width={columnsWidth.visibility}>{
                                 l.activeInEdit && l.activeInLive ? t('label.visibility.active.title') :
                                     l.activeInEdit && !l.activeInLive ? t('label.visibility.hiddenInLive.title') :
                                         l.mandatory ? t('label.visibility.required.title') : t('label.visibility.inactive.title')
                             }</TableBodyCell>
-                            <TableBodyCell>
+                            <TableBodyCell align={"right"}>
                                 <Button size="big" variant="ghost" icon={<MoreVert/>}
                                         onClick={e => openMenu(e, l.language)}/>
                                 <Menu isDisplayed={menuOpen[l.language] !== undefined && menuOpen[l.language]}
@@ -90,18 +98,24 @@ export default ({uilang, defaultLanguage, setDefaultLanguage, siteLocales, setSi
                                       onClose={() => closeMenu(l.language)}>
                                     <MenuItem label={t('label.table.actions.edit')}
                                               isDisabled={l.language === defaultLanguage}
-                                              onClick={() => openModal(l)}/>
+                                              onClick={() => {
+                                                  if (l.language !== defaultLanguage) openModal(l)
+                                              }}/>
                                     <MenuItem label={t('label.table.actions.default')}
                                               isDisabled={l.language === defaultLanguage}
                                               onClick={() => {
-                                                  setDefaultLanguage(l.language);
-                                                  setMenuOpen(false);
+                                                  if (l.language !== defaultLanguage) {
+                                                      setDefaultLanguage(l.language);
+                                                      setMenuOpen(false);
+                                                  }
                                               }}/>
                                     <MenuItem label={t('label.table.actions.delete')}
                                               isDisabled={l.mandatory || l.activeInEdit || l.language === defaultLanguage || l.language === uilang || getLanguageCount(l) > 0}
                                               onClick={() => {
-                                                  setSiteLocales(siteLocales.filter(language => language.language !== l.language));
-                                                  setMenuOpen(false);
+                                                  if (!l.mandatory && !l.activeInEdit && l.language !== defaultLanguage && l.language !== uilang && getLanguageCount(l) == 0) {
+                                                      setSiteLocales(siteLocales.filter(language => language.language !== l.language));
+                                                      setMenuOpen(false);
+                                                  }
                                               }}/>
                                 </Menu>
                             </TableBodyCell>
