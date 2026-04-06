@@ -4,6 +4,8 @@
     "cypress/*/*.ts"
   ],
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "noUncheckedSideEffectImports": false,
     "types": [
       "@jahia/cypress",
       "cypress-iframe"

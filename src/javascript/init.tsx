@@ -11,7 +11,7 @@ export default () => {
 
             registry.add('adminRoute', 'site-settings-languages', {
                 targets: ['administration-sites:41'],
-                label: 'site-settings-languages:label.settings.title',
+                label: 'site-settings-languages:label.title',
                 icon: <Language/>,
                 isSelectable: true,
                 requiredPermission: 'siteAdminLanguages',

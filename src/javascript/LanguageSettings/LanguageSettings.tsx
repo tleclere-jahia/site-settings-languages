@@ -1,19 +1,21 @@
 import {useMemo, useState} from "react";
 import {shallowEqual, useSelector} from "react-redux";
-import {useQuery} from "@apollo/client";
-import gql from 'graphql-tag';
-import {LayoutContent} from "@jahia/moonstone"
+import {useTranslation} from "react-i18next";
+import {gql, useQuery} from "@apollo/client";
+import {Add, Button, Header, LayoutContent} from "@jahia/moonstone"
 import {PredefinedFragments, useNodeChecks} from "@jahia/data-helper";
-import Header from "./Header";
-import Content from "./Content";
+import Content from "./LanguageContent";
 import UntranslatedContent from "./UntranslatedContent";
+import LanguageModal from "./LanguageModal";
+import {Language} from "./Language";
 
 export const LanguageSettings = () => {
+    const {t} = useTranslation('site-settings-languages');
     const {site, uilang} = useSelector(state => ({site: state.site, uilang: state.uilang}), shallowEqual);
     const res = useNodeChecks({path: `/sites/${site}`, uilang}, {requiredPermission: 'siteAdminLanguages'});
     if (!res.checksResult) return '';
 
-    const {data, loading, error} = useQuery(gql`query siteInfo($path: String!, $displayLanguage: String!) {
+    const {data, loading, error, refetch} = useQuery(gql`query getSiteLanguages($path: String!, $displayLanguage: String!) {
         jcr(workspace: EDIT) {
             result: nodeByPath(path: $path) {
                 site {
@@ -55,48 +57,41 @@ export const LanguageSettings = () => {
         throw new Error(error.message);
     }
 
-    const [defaultLanguage, setDefaultLanguage] = useState(null);
-    const [allowsUnlistedLanguages, setAllowsUnlistedLanguages] = useState(false);
-    const [mixLanguage, setMixLanguage] = useState(false);
     const [siteLocales, setSiteLocales] = useState([]);
+    const [selectedLanguage, setSelectedLanguage] = useState(null as unknown as Language);
+    const [modalOpen, setModalOpen] = useState(false);
 
-    useMemo(() => setDefaultLanguage(data?.jcr?.result?.site?.defaultLanguage), [data]);
-    useMemo(() => setAllowsUnlistedLanguages(data?.jcr?.result?.site?.allowsUnlistedLanguages?.booleanValue || false), [data]);
-    useMemo(() => setMixLanguage(data?.jcr?.result?.site?.mixLanguage?.booleanValue || false), [data]);
+    const allowsUnlistedLanguages = data?.jcr?.result?.site?.allowsUnlistedLanguages?.booleanValue;
+    const mixLanguage = data?.jcr?.result?.site?.mixLanguage?.booleanValue;
+    const defaultLanguage = data?.jcr?.result?.site?.defaultLanguage;
     useMemo(() => setSiteLocales(data?.jcr?.result?.site?.siteLocales || []), [data]);
 
-    const untranslatedValue = (allowsUnlistedLanguages && mixLanguage) ? 'all' :
-        (!allowsUnlistedLanguages && mixLanguage) ? 'only' :
-            (!allowsUnlistedLanguages && !mixLanguage) ? 'never' : 'never';
-
-    const setUntranslatedValue = value => {
-        switch (value) {
-            case 'never':
-                setAllowsUnlistedLanguages(false);
-                setMixLanguage(false);
-                break;
-            case 'only':
-                setAllowsUnlistedLanguages(false);
-                setMixLanguage(true);
-                break;
-            case 'all':
-                setAllowsUnlistedLanguages(true);
-                setMixLanguage(true);
-                break;
-        }
+    const openModal = (language: Language) => {
+        setSelectedLanguage(language);
+        setModalOpen(true);
+    };
+    const closeModal = () => {
+        setModalOpen(false);
     };
 
-    return <LayoutContent isLoading={loading}
-                          aria-labelledby="site-settings-languages-title"
-                          header={<Header site={{siteKey: site, displayName: data?.jcr?.result?.site?.displayName}}
-                                          siteLocales={siteLocales} defaultLanguage={defaultLanguage}
-                                          mixLanguage={mixLanguage} allowsUnlistedLanguages={allowsUnlistedLanguages}/>}
-                          content={<><Content uilang={uilang} defaultLanguage={defaultLanguage}
-                                              setDefaultLanguage={setDefaultLanguage}
-                                              siteLocales={siteLocales} setSiteLocales={setSiteLocales}
-                                              availableLocales={data?.admin?.availableLocales}/>
-                              <UntranslatedContent untranslatedValue={untranslatedValue}
-                                                   setUntranslatedValue={setUntranslatedValue}/>
+    return <LayoutContent isLoading={loading} aria-labelledby="site-settings-languages-title"
+                          header={
+                              <Header mainActions={[
+                                  <Button size="big" color="accent" icon={<Add/>} label={t('label.table.actions.add')}
+                                          onClick={() => openModal(null as unknown as Language)}/>
+                              ]} title={t('label.header', {siteName: data?.jcr?.result?.site?.displayName})}/>}
+                          content={<>
+                              <LanguageModal site={site} language={selectedLanguage} isOpen={modalOpen}
+                                             closeModal={closeModal} refetch={refetch}
+                                             availableLocales={data?.admin?.availableLocales}
+                                             siteLocales={siteLocales} defaultLanguage={defaultLanguage}/>
+                              <Content site={site} uilang={uilang} openModal={openModal} siteLocales={siteLocales}
+                                       defaultLanguage={defaultLanguage} refetch={refetch}/>
+                              <UntranslatedContent site={site}
+                                                   value={(allowsUnlistedLanguages && mixLanguage) ? 'all' :
+                                                       (!allowsUnlistedLanguages && mixLanguage) ? 'only' :
+                                                           (!allowsUnlistedLanguages && !mixLanguage) ? 'never' : 'never'
+                                                   } refetch={refetch}/>
                           </>}
     />;
 };

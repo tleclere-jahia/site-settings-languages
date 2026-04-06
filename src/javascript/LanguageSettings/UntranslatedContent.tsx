@@ -1,17 +1,94 @@
+import {useState} from "react";
 import {useTranslation} from "react-i18next";
-import {Paper, RadioGroup, RadioItem, Typography} from "@jahia/moonstone";
+import {gql, useMutation} from "@apollo/client";
+import {
+    Button,
+    Edit,
+    Modal,
+    ModalBody,
+    ModalFooter,
+    ModalHeader,
+    Paper,
+    RadioGroup,
+    RadioItem,
+    Typography
+} from "@jahia/moonstone";
 import "./LanguageSettings.scss";
 
-export default ({untranslatedValue, setUntranslatedValue}) => {
+export default ({site, value, refetch}) => {
     const {t} = useTranslation('site-settings-languages');
 
-    return <Paper>
-        <Typography variant="heading">{t('label.settings.unstranslatedContent.title')}</Typography>
-        <RadioGroup className="radio-section" value={untranslatedValue}
-                    onChange={(e, v) => setUntranslatedValue(v)}>
-            <RadioItem id={"never"} label={t('label.settings.unstranslatedContent.never')} value={"never"}/>
-            <RadioItem id={"only"} label={t('label.settings.unstranslatedContent.only')} value={"only"}/>
-            <RadioItem id={"all"} label={t('label.settings.unstranslatedContent.all')} value={"all"}/>
-        </RadioGroup>
-    </Paper>;
+    const [modalOpen, setModalOpen] = useState(false);
+
+    const [untranslatedValue, setUntranslatedValue] = useState(value);
+    const [gqlSave] = useMutation(gql`mutation saveSiteLanguageOptions($path: String!, $mixLanguage: String!, $allowsUnlistedLanguages: String!) {
+                jcr(workspace: EDIT) {
+                    mutateNode(pathOrId: $path) {
+                        mixLanguage: mutateProperty(name: "j:mixLanguage") {
+                            setValue(value: $mixLanguage, type: BOOLEAN)
+                        }
+                        allowsUnlistedLanguages: mutateProperty(name: "j:allowsUnlistedLanguages") {
+                            setValue(value: $allowsUnlistedLanguages, type: BOOLEAN)
+                        }
+                    }
+                }
+            }`);
+
+    const save = () => {
+        let allowsUnlistedLanguages = untranslatedValue === 'all';
+        let mixLanguage = untranslatedValue !== 'all';
+        switch (untranslatedValue) {
+            case 'never':
+                allowsUnlistedLanguages = false;
+                mixLanguage = false;
+                break;
+            case 'only':
+                allowsUnlistedLanguages = false;
+                mixLanguage = true;
+                break;
+            case 'all':
+                allowsUnlistedLanguages = true;
+                mixLanguage = true;
+                break;
+        }
+        gqlSave({
+            variables: {
+                path: `/sites/${site}`,
+                mixLanguage,
+                allowsUnlistedLanguages
+            }
+        }).then(() => {
+            setModalOpen(false);
+            refetch();
+        });
+    };
+
+    return <>
+        <Modal isOpen={modalOpen} size="large">
+            <ModalHeader title={t('label.unstranslatedContent.modal')}/>
+            <ModalBody>
+                <Typography variant="heading">{t('label.unstranslatedContent.title')}</Typography>
+                <RadioGroup name="values" className="spacing-small" value={untranslatedValue}
+                            onChange={(e, v) => setUntranslatedValue(v)}>
+                    <RadioItem id={"never"} label={t('label.unstranslatedContent.never')} value={"never"}/>
+                    <RadioItem id={"only"} label={t('label.unstranslatedContent.only')} value={"only"}/>
+                    <RadioItem id={"all"} label={t('label.unstranslatedContent.all')} value={"all"}/>
+                </RadioGroup>
+            </ModalBody>
+            <ModalFooter>
+                <Button size="big" variant="ghost" label={t('label.actions.cancel')}
+                        onClick={() => setModalOpen(false)}/>
+                <Button size="big" color="accent" label={t('label.actions.save')} onClick={() => save()}/>
+            </ModalFooter>
+        </Modal>
+
+        <Paper>
+            <Button variant="outlined" color="accent" icon={<Edit/>} label={t('label.actions.edit')}
+                    className="btn-untranslated-content" onClick={() => setModalOpen(true)}/>
+            <Typography variant="heading">{t('label.unstranslatedContent.title')}</Typography>
+            <div className="spacing-small">
+                <Typography>{t(`label.unstranslatedContent.${value}`)}</Typography>
+            </div>
+        </Paper>
+    </>;
 };

@@ -1,76 +1,146 @@
 import {useState} from "react";
-import {Button, Dropdown, Modal, ModalBody, ModalFooter, ModalHeader, Pill, Typography} from "@jahia/moonstone";
 import {useTranslation} from "react-i18next";
+import {gql, useMutation} from "@apollo/client";
+import {
+    Button,
+    CheckboxGroup,
+    CheckboxItem,
+    Dropdown,
+    Modal,
+    ModalBody,
+    ModalFooter,
+    ModalHeader,
+    Pill,
+    Typography
+} from "@jahia/moonstone";
+import type {Language} from "./Language";
 import "./LanguageSettings.scss";
 
-export default ({language, isOpen, closeModal, siteLocales, availableLocales}) => {
+export default ({site, language, isOpen, closeModal, refetch, availableLocales, siteLocales, defaultLanguage}) => {
     const {t} = useTranslation('site-settings-languages');
 
-    const [newLanguage, setNewLanguage] = useState({activeInEdit: false, activeInLive: false, mandatory: false});
-    if (language && language.language !== newLanguage.language) setNewLanguage(
-        Object.assign({}, newLanguage, {
-            language: language.language,
-            displayName: language.displayName,
-            activeInEdit: language.activeInEdit,
-            activeInLive: language.activeInLive,
-            mandatory: language.mandatory
-        })
-    );
+    const [forceReset, setForceReset] = useState(false);
+    const [newLanguage, setNewLanguage] = useState({
+        activeInEdit: false,
+        activeInLive: false,
+        mandatory: false
+    } as Language);
+    if (forceReset) {
+        setNewLanguage(language || {
+            activeInEdit: false,
+            activeInLive: false,
+            mandatory: false
+        } as Language);
+        setForceReset(false);
+    } else if (language && language.language !== newLanguage.language) setNewLanguage(Object.assign({}, newLanguage, language));
 
-    const onClose = (l, addLanguage) => {
-        setNewLanguage({activeInEdit: false, activeInLive: false, mandatory: false});
-        closeModal(l, addLanguage);
+    const onClose = () => {
+        setForceReset(true);
+        closeModal(null, false);
+    };
+
+    const [gqlSave] = useMutation(gql`mutation siteLanguages($path: String!, $defaultLanguage: String!, $languages: [String!]!, $mandatoryLanguages: [String!]!, $inactiveLanguages: [String!]!, $inactiveLiveLanguages: [String!]!) {
+          jcr(workspace: EDIT) {
+            mutateNode(pathOrId: $path) {
+              defaultLanguage: mutateProperty(name: "j:defaultLanguage") {
+                setValue(value: $defaultLanguage, type: STRING)
+              }
+              languages: mutateProperty(name: "j:languages") {
+                setValues(values: $languages, type: STRING)
+              }
+              mandatoryLanguages: mutateProperty(name: "j:mandatoryLanguages") {
+                setValues(values: $mandatoryLanguages, type: STRING)
+              }
+              inactiveLanguages: mutateProperty(name: "j:inactiveLanguages") {
+                setValues(values: $inactiveLanguages, type: STRING)
+              }
+              inactiveLiveLanguages: mutateProperty(name: "j:inactiveLiveLanguages") {
+                setValues(values: $inactiveLiveLanguages, type: STRING)
+              }
+            }
+          }
+        }`);
+
+    const save = (l: Language, addLanguage: boolean) => {
+        if (addLanguage) siteLocales = [...siteLocales, l];
+        else siteLocales = siteLocales.map((lang: Language) => lang.language === l.language ? l : lang);
+
+        gqlSave({
+            variables: {
+                path: `/sites/${site}`,
+                defaultLanguage,
+                languages: siteLocales.filter((l: Language) => l.activeInEdit || l.activeInLive || l.defaultLanguage || l.mandatory).map((l: Language) => l.language),
+                mandatoryLanguages: siteLocales.filter((l: Language) => l.mandatory).map((l: Language) => l.language),
+                inactiveLanguages: siteLocales.filter((l: Language) => !l.activeInEdit).map((l: Language) => l.language),
+                inactiveLiveLanguages: siteLocales.filter((l: Language) => !l.activeInLive).map((l: Language) => l.language)
+            }
+        }).then(() => {
+            setForceReset(true);
+            closeModal(l, addLanguage);
+            refetch();
+        });
     };
 
     return <Modal isOpen={isOpen}>
-        <ModalHeader title={t('label.modal.header')}/>
+        <ModalHeader
+            title={t('label.modal.header', {action: language ? t('label.actions.edit') : t('label.actions.add')})}/>
         <ModalBody>
             <div className="field">
                 <Typography variant="subheading">{t('label.modal.language.title')}</Typography>
                 <Dropdown className="dropdown" placeholder={t('label.modal.language.placeholder')} variant="outlined"
                           isDisabled={language} value={newLanguage.language}
-                          data={availableLocales.map(l => {
+                          data={availableLocales.map((l: Language) => {
                               return {
                                   iconEnd: <Pill label={l.language.toUpperCase()}/>,
                                   id: l.language,
                                   label: l.displayName,
                                   value: l.language,
-                                  isDisabled: siteLocales.find(lang => lang.language === l.language)
+                                  isDisabled: siteLocales.find((lang: Language) => lang.language === l.language)
                               }
                           })}
                           onChange={(e, v) => setNewLanguage({
                               ...newLanguage,
                               language: v.value,
                               displayName: v.label
-                          })}/>
+                          } as Language)}/>
             </div>
 
             <div className="field">
-                <Typography variant="subheading">{t('label.modal.visibility.title')}</Typography>
+                <CheckboxGroup name="default" isReadOnly={true}>
+                    <CheckboxItem id={defaultLanguage} label={t('label.modal.default')}
+                                  checked={newLanguage.language === defaultLanguage}/>
+                </CheckboxGroup>
+            </div>
+
+            <div className="field">
+                <Typography variant="subheading">{t('label.modal.availability.title')}</Typography>
                 <Dropdown data={[
                     {
-                        label: t('label.visibility.active.title'),
-                        description: t('label.visibility.active.description'),
-                        value: 'active'
+                        label: t('label.availability.inactive.title'),
+                        description: t('label.availability.inactive.description'),
+                        value: 'inactive',
+                        isDisabled: newLanguage.language === defaultLanguage
                     },
                     {
-                        label: t('label.visibility.hiddenInLive.title'),
-                        description: t('label.visibility.hiddenInLive.description'),
-                        value: 'hiddenInLive'
+                        label: t('label.availability.inactiveInLive.title'),
+                        description: t('label.availability.inactiveInLive.description'),
+                        value: 'inactiveInLive',
+                        isDisabled: newLanguage.language === defaultLanguage
                     },
                     {
-                        label: t('label.visibility.required.title'),
-                        description: t('label.visibility.required.description'),
+                        label: t('label.availability.active.title'),
+                        description: t('label.availability.active.description'),
+                        value: 'active',
+                        isDisabled: newLanguage.language === defaultLanguage
+                    },
+                    {
+                        label: t('label.availability.required.title'),
+                        description: t('label.availability.required.description'),
                         value: 'required'
-                    },
-                    {
-                        label: t('label.visibility.inactive.title'),
-                        description: t('label.visibility.inactive.description'),
-                        value: 'inactive'
                     }
-                ]} placeholder={t('label.modal.visibility.placeholder')} variant="outlined" className="dropdown"
+                ]} placeholder={t('label.modal.availability.placeholder')} variant="outlined" className="dropdown"
                           value={newLanguage.activeInEdit && newLanguage.activeInLive ? 'active' :
-                              newLanguage.activeInEdit && !newLanguage.activeInLive ? 'hiddenInLive' :
+                              newLanguage.activeInEdit && !newLanguage.activeInLive ? 'inactiveInLive' :
                                   newLanguage.mandatory ? 'required' : 'inactive'}
                           onChange={(e, v) => {
                               switch (v.value) {
@@ -79,7 +149,7 @@ export default ({language, isOpen, closeModal, siteLocales, availableLocales}) =
                                       newLanguage.activeInLive = true;
                                       newLanguage.mandatory = true;
                                       break;
-                                  case 'hiddenInLive':
+                                  case 'inactiveInLive':
                                       newLanguage.activeInEdit = true;
                                       newLanguage.activeInLive = false;
                                       newLanguage.mandatory = true;
@@ -100,13 +170,13 @@ export default ({language, isOpen, closeModal, siteLocales, availableLocales}) =
             </div>
         </ModalBody>
         <ModalFooter>
-            <Button size="big" variant="ghost" label={t('label.modal.actions.cancel')}
-                    onClick={() => onClose(null, false)}/>
+            <Button size="big" variant="ghost" label={t('label.actions.cancel')}
+                    onClick={() => onClose()}/>
             {language ?
-                <Button size="big" color="accent" label={t('label.modal.actions.save')}
-                        onClick={() => onClose(newLanguage, false)}/> :
-                <Button size="big" color="accent" label={t('label.modal.actions.add')}
-                        onClick={() => onClose(newLanguage, true)}/>
+                <Button size="big" color="accent" label={t('label.actions.save')}
+                        onClick={() => save(newLanguage, false)}/> :
+                <Button size="big" color="accent" label={t('label.actions.add')}
+                        onClick={() => save(newLanguage, true)}/>
             }
         </ModalFooter>
     </Modal>;
