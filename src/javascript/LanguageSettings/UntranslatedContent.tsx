@@ -78,7 +78,8 @@ export default ({site, value, refetch}) => {
             <ModalFooter>
                 <Button size="big" variant="ghost" label={t('label.actions.cancel')}
                         onClick={() => setModalOpen(false)}/>
-                <Button size="big" color="accent" label={t('label.actions.save')} onClick={() => save()}/>
+                <Button size="big" color="accent" label={t('label.actions.save')} onClick={() => save()}
+                        data-sel-role="save"/>
             </ModalFooter>
         </Modal>
 
@@ -87,7 +88,8 @@ export default ({site, value, refetch}) => {
                     className="btn-untranslated-content" onClick={() => setModalOpen(true)}/>
             <Typography variant="heading">{t('label.unstranslatedContent.title')}</Typography>
             <div className="spacing-small">
-                <Typography>{t(`label.unstranslatedContent.${value}`)}</Typography>
+                <Typography data-sel-role="unstranslatedContent-value"
+                            data-value={value}>{t(`label.unstranslatedContent.${value}`)}</Typography>
             </div>
         </Paper>
     </>;

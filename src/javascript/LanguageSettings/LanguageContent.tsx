@@ -126,9 +126,9 @@ export default ({site, uilang, openModal, siteLocales, defaultLanguage, refetch}
                             {l.displayName} <Pill label={l.language}/>
                         </TableBodyCell>
                         <TableBodyCell width={columnsWidth.availability}>{
-                            l.activeInEdit && l.activeInLive ? t('label.availability.active.title') :
-                                l.activeInEdit && !l.activeInLive ? t('label.availability.inactiveInLive.title') :
-                                    l.mandatory ? t('label.availability.required.title') : t('label.availability.inactive.title')
+                            l.activeInEdit && l.activeInLive && l.mandatory ? t('label.availability.required.title') :
+                                l.activeInEdit && l.activeInLive ? t('label.availability.active.title') :
+                                    l.activeInEdit && !l.activeInLive ? t('label.availability.inactiveInLive.title') : t('label.availability.inactive.title')
                         }</TableBodyCell>
                         <TableBodyCell align={"right"}>
                             <Button size="big" variant="ghost" icon={<MoreVert/>}

@@ -58,7 +58,12 @@ export const LanguageSettings = () => {
     }
 
     const [siteLocales, setSiteLocales] = useState([]);
-    const [selectedLanguage, setSelectedLanguage] = useState(null as unknown as Language);
+    const [selectedLanguage, setSelectedLanguage] = useState({
+        isNew: true,
+        activeInEdit: false,
+        activeInLive: false,
+        mandatory: false
+    } as Language);
     const [modalOpen, setModalOpen] = useState(false);
 
     const allowsUnlistedLanguages = data?.jcr?.result?.site?.allowsUnlistedLanguages?.booleanValue;
@@ -67,6 +72,7 @@ export const LanguageSettings = () => {
     useMemo(() => setSiteLocales(data?.jcr?.result?.site?.siteLocales || []), [data]);
 
     const openModal = (language: Language) => {
+        language.isNew = !language.language;
         setSelectedLanguage(language);
         setModalOpen(true);
     };
@@ -78,19 +84,26 @@ export const LanguageSettings = () => {
                           header={
                               <Header mainActions={[
                                   <Button size="big" color="accent" icon={<Add/>} label={t('label.table.actions.add')}
-                                          onClick={() => openModal(null as unknown as Language)}/>
+                                          data-sel-role="addLanguage"
+                                          onClick={() => openModal({
+                                              isNew: true,
+                                              activeInEdit: false,
+                                              activeInLive: false,
+                                              mandatory: false
+                                          } as Language)}/>
                               ]} title={t('label.header', {siteName: data?.jcr?.result?.site?.displayName})}/>}
                           content={<>
-                              <LanguageModal site={site} language={selectedLanguage} isOpen={modalOpen}
-                                             closeModal={closeModal} refetch={refetch}
+                              <LanguageModal site={site} selectedLanguage={selectedLanguage}
+                                             setSelectedLanguage={setSelectedLanguage}
+                                             isOpen={modalOpen} closeModal={closeModal} refetch={refetch}
                                              availableLocales={data?.admin?.availableLocales}
                                              siteLocales={siteLocales} defaultLanguage={defaultLanguage}/>
                               <Content site={site} uilang={uilang} openModal={openModal} siteLocales={siteLocales}
                                        defaultLanguage={defaultLanguage} refetch={refetch}/>
                               <UntranslatedContent site={site}
-                                                   value={(allowsUnlistedLanguages && mixLanguage) ? 'all' :
-                                                       (!allowsUnlistedLanguages && mixLanguage) ? 'only' :
-                                                           (!allowsUnlistedLanguages && !mixLanguage) ? 'never' : 'never'
+                                                   value={allowsUnlistedLanguages && mixLanguage ? 'all' :
+                                                       !allowsUnlistedLanguages && mixLanguage ? 'only' :
+                                                           !allowsUnlistedLanguages && !mixLanguage ? 'never' : 'never'
                                                    } refetch={refetch}/>
                           </>}
     />;

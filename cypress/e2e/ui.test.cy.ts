@@ -1,4 +1,14 @@
-import {Dropdown, getComponentByRole, getComponentBySelector} from "@jahia/cypress";
+import {
+    BaseComponent,
+    Button,
+    Dropdown,
+    getComponent,
+    getComponentByRole,
+    getComponentBySelector,
+    Menu,
+    Table
+} from "@jahia/cypress";
+import {gql} from "@apollo/client";
 
 describe('UI Site settings language', () => {
     before(() => {
@@ -7,28 +17,126 @@ describe('UI Site settings language', () => {
         cy.visit('/cms/adminframe/default/en/settings.manageModules.html?redirect=false');
         cy.get('input[type="search"]').type('site-settings-languages');
         cy.get('table tbody tr[data-sel-role="module-row-site-settings-languages"]').should('exist');
+    });
+    beforeEach(() => cy.login())
+    afterEach(() => cy.logout());
+    after(() => cy.logout());
 
-        // visit site settings languages page
+    const visitSiteSettingsLanguages = () => {
+        // visit systemsite settings languages page
         cy.visit('/jahia/administration/systemsite/site-settings-languages');
-    });
-    after(() => {
-        cy.logout();
-    });
-
-    // Dropdown in header: nb items and one item amoung them
-    it('should display JVM locales', () => {
         // wait for GraphQL response
         cy.wait(500);
-        // open dropdown
-        const field = getComponentBySelector(Dropdown, '.site-settings-languages-dropdown');
-        field.get().click();
-        field.get().find('.moonstone-menuItem').should('have.length', 727)
+    };
+
+    it('should display systemsite languages', () => {
+        visitSiteSettingsLanguages();
+
+        // 6 rows = 6 languages set
+        getComponent(Table).getRows().should('have.length', 6);
     });
 
-    // Table: nb elements for one site
-    // Table: check default language, which is and it is alone
-    // Table: check disabled checkbox, disabled delete button
-    // Table: check click delete button: remove item from table
-    // Table: check title behind delete button for current displayed language
-    // Save: check save button
+    it('should display default value', () => {
+        visitSiteSettingsLanguages();
+
+        // first row is the default language
+        getComponent(Table).getRowByIndex(1).get().find('svg').first()
+            .should('have.class', 'moonstone-icon_blue');
+        // not the default language
+        getComponent(Table).getRowByIndex(3).get().find('svg').first()
+            .should('not.have.class', 'moonstone-icon_blue');
+    });
+
+    it('should change mixLanguage and allowsUnlistedLanguages', () => {
+        visitSiteSettingsLanguages();
+
+        // edit settings
+        getComponentBySelector(Button, '.btn-untranslated-content').click();
+        // change value
+        getComponentBySelector(BaseComponent, 'input[type="radio"][value="only"]').should('be.visible').click();
+        getComponentByRole(Button, 'save').click();
+        // check label
+        getComponentByRole(BaseComponent, 'unstranslatedContent-value')
+            .should('have.text', 'Only for languages supported by the website')
+            .should('have.attr', 'data-value', 'only');
+
+        // reset value
+        cy.apollo({
+            variables: {
+                path: '/sites/systemsite',
+                mixLanguage: true,
+                allowsUnlistedLanguages: true,
+            },
+            mutation: gql`mutation($path: String!, $mixLanguage: String!, $allowsUnlistedLanguages: String!) {
+                jcr(workspace: EDIT) {
+                    mutateNode(pathOrId: $path) {
+                        mixLanguage: mutateProperty(name: "j:mixLanguage") {
+                            setValue(value: $mixLanguage, type: BOOLEAN)
+                        }
+                        allowsUnlistedLanguages: mutateProperty(name: "j:allowsUnlistedLanguages") {
+                            setValue(value: $allowsUnlistedLanguages, type: BOOLEAN)
+                        }
+                    }
+                }
+            }`
+        }).should(response => expect(response.data.jcr.mutateNode.mixLanguage.setValue).to.be.true);
+    });
+
+    const changeAvailability = (rowIndex: number, item: string) => {
+        getComponent(Table).getRowByIndex(rowIndex).get().find('button').last().click();
+        getComponent(Menu).select('Edit');
+        getComponentByRole(Dropdown, 'availability').select(item);
+        getComponentByRole(Button, 'save').click();
+        getComponent(Table).getRowByIndex(rowIndex).get().contains(item);
+    };
+
+    it('should change availability for the default language', () => {
+        visitSiteSettingsLanguages();
+
+        getComponent(Table).getRowByIndex(1).get().find('button').last().click();
+        getComponent(Menu).select('Edit');
+        const dropDown = getComponentByRole(Dropdown, 'availability');
+        dropDown.get().click();
+        getComponent(Menu, dropDown).get().find('.moonstone-menuItem').contains('Inactive')
+            .parent().parent().should('have.class', 'moonstone-disabled');
+        dropDown.get().click();
+        getComponentByRole(Button, 'cancel').click();
+
+        changeAvailability(1, 'Required');
+        // reset
+        changeAvailability(1, 'Active');
+    });
+
+    it('should change availability for another language', () => {
+        visitSiteSettingsLanguages();
+
+        changeAvailability(3, 'Inactive');
+        // reset
+        changeAvailability(3, 'Active');
+    });
+
+    it('should add and delete a new language', () => {
+        visitSiteSettingsLanguages();
+
+        getComponentByRole(Button, 'addLanguage').click();
+        getComponentByRole(Dropdown, 'languages').select('Afrikaans');
+        getComponentByRole(Dropdown, 'availability').select('Inactive in live');
+        getComponentByRole(Button, 'add').click();
+
+        // reset
+        cy.wait(1000);
+        visitSiteSettingsLanguages();
+        changeAvailability(1, 'Inactive');
+        getComponent(Table).getRowByIndex(1).get().find('button').last().click();
+        getComponent(Menu).get().find('.moonstone-menuItem').contains('Delete')
+            .parent().parent().click();
+    });
+
+    it('should not be able to delete the default language', () => {
+        visitSiteSettingsLanguages();
+
+        getComponent(Table).getRowByIndex(2).get().find('button').last().click();
+        getComponent(Menu).get().find('.moonstone-menuItem').contains('Delete')
+            .parent().parent().should('have.class', 'moonstone-disabled');
+    });
 });

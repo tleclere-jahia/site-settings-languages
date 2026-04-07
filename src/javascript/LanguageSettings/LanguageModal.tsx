@@ -1,4 +1,3 @@
-import {useState} from "react";
 import {useTranslation} from "react-i18next";
 import {gql, useMutation} from "@apollo/client";
 import {
@@ -16,26 +15,26 @@ import {
 import type {Language} from "./Language";
 import "./LanguageSettings.scss";
 
-export default ({site, language, isOpen, closeModal, refetch, availableLocales, siteLocales, defaultLanguage}) => {
+export default ({
+                    site,
+                    selectedLanguage,
+                    setSelectedLanguage,
+                    isOpen,
+                    closeModal,
+                    refetch,
+                    availableLocales,
+                    siteLocales,
+                    defaultLanguage
+                }) => {
     const {t} = useTranslation('site-settings-languages');
 
-    const [forceReset, setForceReset] = useState(false);
-    const [newLanguage, setNewLanguage] = useState({
-        activeInEdit: false,
-        activeInLive: false,
-        mandatory: false
-    } as Language);
-    if (forceReset) {
-        setNewLanguage(language || {
+    const onClose = () => {
+        setSelectedLanguage({
+            isNew: true,
             activeInEdit: false,
             activeInLive: false,
             mandatory: false
         } as Language);
-        setForceReset(false);
-    } else if (language && language.language !== newLanguage.language) setNewLanguage(Object.assign({}, newLanguage, language));
-
-    const onClose = () => {
-        setForceReset(true);
         closeModal(null, false);
     };
 
@@ -75,7 +74,12 @@ export default ({site, language, isOpen, closeModal, refetch, availableLocales, 
                 inactiveLiveLanguages: siteLocales.filter((l: Language) => !l.activeInLive).map((l: Language) => l.language)
             }
         }).then(() => {
-            setForceReset(true);
+            setSelectedLanguage({
+                isNew: true,
+                activeInEdit: false,
+                activeInLive: false,
+                mandatory: false
+            } as Language);
             closeModal(l, addLanguage);
             refetch();
         });
@@ -83,23 +87,23 @@ export default ({site, language, isOpen, closeModal, refetch, availableLocales, 
 
     return <Modal isOpen={isOpen}>
         <ModalHeader
-            title={t('label.modal.header', {action: language ? t('label.actions.edit') : t('label.actions.add')})}/>
+            title={t('label.modal.header', {action: selectedLanguage.language ? t('label.actions.edit') : t('label.actions.add')})}/>
         <ModalBody>
             <div className="field">
                 <Typography variant="subheading">{t('label.modal.language.title')}</Typography>
                 <Dropdown className="dropdown" placeholder={t('label.modal.language.placeholder')} variant="outlined"
-                          isDisabled={language} value={newLanguage.language}
-                          data={availableLocales.map((l: Language) => {
-                              return {
-                                  iconEnd: <Pill label={l.language.toUpperCase()}/>,
-                                  id: l.language,
-                                  label: l.displayName,
-                                  value: l.language,
-                                  isDisabled: siteLocales.find((lang: Language) => lang.language === l.language)
-                              }
-                          })}
-                          onChange={(e, v) => setNewLanguage({
-                              ...newLanguage,
+                          isDisabled={!selectedLanguage.isNew} value={selectedLanguage.language}
+                          data-sel-role="languages" data={availableLocales.map((l: Language) => {
+                    return {
+                        iconEnd: <Pill label={l.language.toUpperCase()}/>,
+                        id: l.language,
+                        label: l.displayName,
+                        value: l.language,
+                        isDisabled: siteLocales.find((lang: Language) => lang.language === l.language)
+                    }
+                })}
+                          onChange={(e, v) => setSelectedLanguage({
+                              ...selectedLanguage,
                               language: v.value,
                               displayName: v.label
                           } as Language)}/>
@@ -108,30 +112,29 @@ export default ({site, language, isOpen, closeModal, refetch, availableLocales, 
             <div className="field">
                 <CheckboxGroup name="default" isReadOnly={true}>
                     <CheckboxItem id={defaultLanguage} label={t('label.modal.default')}
-                                  checked={newLanguage.language === defaultLanguage}/>
+                                  checked={selectedLanguage.language === defaultLanguage}/>
                 </CheckboxGroup>
             </div>
 
             <div className="field">
                 <Typography variant="subheading">{t('label.modal.availability.title')}</Typography>
-                <Dropdown data={[
+                <Dropdown data-sel-role="availability" data={[
                     {
                         label: t('label.availability.inactive.title'),
                         description: t('label.availability.inactive.description'),
                         value: 'inactive',
-                        isDisabled: newLanguage.language === defaultLanguage
+                        isDisabled: selectedLanguage.language === defaultLanguage
                     },
                     {
                         label: t('label.availability.inactiveInLive.title'),
                         description: t('label.availability.inactiveInLive.description'),
                         value: 'inactiveInLive',
-                        isDisabled: newLanguage.language === defaultLanguage
+                        isDisabled: selectedLanguage.language === defaultLanguage
                     },
                     {
                         label: t('label.availability.active.title'),
                         description: t('label.availability.active.description'),
-                        value: 'active',
-                        isDisabled: newLanguage.language === defaultLanguage
+                        value: 'active'
                     },
                     {
                         label: t('label.availability.required.title'),
@@ -139,44 +142,44 @@ export default ({site, language, isOpen, closeModal, refetch, availableLocales, 
                         value: 'required'
                     }
                 ]} placeholder={t('label.modal.availability.placeholder')} variant="outlined" className="dropdown"
-                          value={newLanguage.activeInEdit && newLanguage.activeInLive ? 'active' :
-                              newLanguage.activeInEdit && !newLanguage.activeInLive ? 'inactiveInLive' :
-                                  newLanguage.mandatory ? 'required' : 'inactive'}
+                          value={selectedLanguage.activeInEdit && selectedLanguage.activeInLive && selectedLanguage.mandatory ? 'required' :
+                              selectedLanguage.activeInEdit && selectedLanguage.activeInLive ? 'active' :
+                                  selectedLanguage.activeInEdit && !selectedLanguage.activeInLive ? 'inactiveInLive' : 'inactive'}
                           onChange={(e, v) => {
                               switch (v.value) {
                                   case 'active':
-                                      newLanguage.activeInEdit = true;
-                                      newLanguage.activeInLive = true;
-                                      newLanguage.mandatory = true;
+                                      selectedLanguage.activeInEdit = true;
+                                      selectedLanguage.activeInLive = true;
+                                      selectedLanguage.mandatory = false;
                                       break;
                                   case 'inactiveInLive':
-                                      newLanguage.activeInEdit = true;
-                                      newLanguage.activeInLive = false;
-                                      newLanguage.mandatory = true;
+                                      selectedLanguage.activeInEdit = true;
+                                      selectedLanguage.activeInLive = false;
+                                      selectedLanguage.mandatory = false;
                                       break;
                                   case 'required':
-                                      newLanguage.activeInEdit = false;
-                                      newLanguage.activeInLive = false;
-                                      newLanguage.mandatory = true;
+                                      selectedLanguage.activeInEdit = true;
+                                      selectedLanguage.activeInLive = true;
+                                      selectedLanguage.mandatory = true;
                                       break;
                                   case 'inactive':
-                                      newLanguage.activeInEdit = false;
-                                      newLanguage.activeInLive = false;
-                                      newLanguage.mandatory = false;
+                                      selectedLanguage.activeInEdit = false;
+                                      selectedLanguage.activeInLive = false;
+                                      selectedLanguage.mandatory = false;
                                       break;
                               }
-                              setNewLanguage({...newLanguage});
+                              setSelectedLanguage({...selectedLanguage});
                           }}/>
             </div>
         </ModalBody>
         <ModalFooter>
             <Button size="big" variant="ghost" label={t('label.actions.cancel')}
-                    onClick={() => onClose()}/>
-            {language ?
-                <Button size="big" color="accent" label={t('label.actions.save')}
-                        onClick={() => save(newLanguage, false)}/> :
+                    data-sel-role="cancel" onClick={() => onClose()}/>
+            {selectedLanguage.isNew ?
                 <Button size="big" color="accent" label={t('label.actions.add')}
-                        onClick={() => save(newLanguage, true)}/>
+                        data-sel-role="add" onClick={() => save(selectedLanguage, true)}/> :
+                <Button size="big" color="accent" label={t('label.actions.save')}
+                        data-sel-role="save" onClick={() => save(selectedLanguage, false)}/>
             }
         </ModalFooter>
     </Modal>;

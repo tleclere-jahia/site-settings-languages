@@ -1,4 +1,5 @@
 export type Language = {
+    isNew: boolean;
     language: string;
     displayName: string;
     activeInEdit: boolean;
